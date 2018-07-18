@@ -1124,8 +1124,26 @@ sub generate_ts_files_for_file {
         $target_langs = $self->{job}->{destination_languages};
     }
 
-    foreach my $lang (@$target_langs) {
-        $self->generate_ts_files_for_file_lang($file, $lang);
+    my @target_langs_to_generate = @$target_langs;
+
+    my %target_langs_hash = map {$_ => 1} @target_langs_to_generate;
+
+    if ($self->{job}->{ts_default_lang_file}) {
+        if (not exists $target_langs_hash{$self->{job}->{source_language}}) {
+            push @target_langs_to_generate, $self->{job}->{source_language};
+            $target_langs_hash{$self->{job}->{source_language}} = 1;
+        }
+    } else {
+        # skip generating TS files for source language (it is added in `output_default_lang_file` mode implicitly)
+        if (exists $target_langs_hash{$self->{job}->{source_language}}) {
+            delete $target_langs_hash{$self->{job}->{source_language}}
+        }
+    }
+
+    foreach my $lang (@target_langs_to_generate) {
+        if (exists $target_langs_hash{$lang}) {
+            $self->generate_ts_files_for_file_lang($file, $lang);
+        }
     }
 }
 
@@ -1147,9 +1165,6 @@ sub get_full_ts_file_path {
 
 sub generate_ts_files_for_file_lang {
     my ($self, $file, $lang) = @_;
-
-    # skip generating TS files for source language (it is added in `output_default_lang_file` mode implicitly)
-    return if ($lang eq $self->{job}->{source_language});
 
     my $result = combine_and(1, $self->run_callbacks('can_generate_ts_file', $file, $lang));
     if ($result eq '0') {

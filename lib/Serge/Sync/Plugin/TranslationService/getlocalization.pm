@@ -3,7 +3,9 @@ use parent Serge::Sync::Plugin::Base::TranslationService, Serge::Interface::SysC
 
 use strict;
 
+use File::chdir;
 use File::Find qw(find);
+use File::Spec::Functions qw(catfile abs2rel);
 use JSON -support_by_pp; # -support_by_pp is used to make Perl on Mac happy
 use Serge::Util qw(subst_macros);
 
@@ -77,7 +79,7 @@ sub push_ts {
     }
 
     if ($self->{data}->{push_translations}) {
-        $cli_return = $self->run_gl_cli('push-tr --force');
+        $cli_return = $self->run_gl_cli('push-tr');
     }
 
     return $cli_return;
@@ -91,14 +93,16 @@ sub run_gl_cli {
     my $command = $action;
 
     $command = 'gl '.$command;
-    print "Running '$command -u <username> p <password>'...\n";
+    print "Running '$command -u <username> -p <password>'...\n";
     $command .= ' -u '.$self->{data}->{username}.' -p '.$self->{data}->{password};
 
-    {
-        local $CWD = $self->{data}->{root_directory};
+    # {
+    #     local $CWD = $self->{data}->{root_directory};
+    #
+    #     $cli_return = $self->run_cmd($command, $capture);
+    # }
 
-        $cli_return = $self->run_cmd($command, $capture);
-    }
+    $cli_return = $self->run_in($self->{data}->{root_directory}, $command, $capture);
 
     return $cli_return;
 }
@@ -111,56 +115,82 @@ sub sync_mapping {
     my @server_master_files = ();
 
     if ($json) {
-       @server_master_files = $self->parse_json_translations();
+        @server_master_files = $self->server_master_files($json);
     }
 
     my %server_master_files_hash = map {$_ => 1} @server_master_files;
 
-    my @local_master_files = $self->find_local_master_files();
+    my @local_master_files = $self->local_master_files();
 
     foreach my $local_master_file (@local_master_files) {
-        if (not exists $server_master_files_hash{$local_master_file}) {
-            my $cli_return = $self->run_gl_cli('add '.$local_master_file);
+        my $full_master_file = catfile('master', $local_master_file);
+
+        if (not exists $server_master_files_hash{$full_master_file}) {
+            my $cli_return = $self->run_gl_cli('add ' . $full_master_file);
 
             if ($cli_return != 0) {
                 return $cli_return;
             }
 
-            foreach my $lang (sort @$self->{data}->{destination_locales}) {
+            foreach my $lang (sort @{$self->{data}->{destination_locales}}) {
                 my $language_code = $lang;
-                $language_code =~ s/-(\w+)$/'-'.uc($1)/e; # convert e.g. 'pt-br' to 'pt-BR'
-                $lang =~ s/-(\w+)$/'_'.uc($1)/e; # convert e.g. 'pt-br' to 'pt_BR'
+                $language_code =~ s/-(\w+)$/'-' . uc($1)/e; # convert e.g. 'pt-br' to 'pt-BR'
+                $lang =~ s/-(\w+)$/'_' . uc($1)/e;          # convert e.g. 'pt-br' to 'pt_BR'
 
                 my $translation_file = $local_master_file;
 
-                $translation_file = ~ s/^master/'translations\/'.$lang/g;
+                $translation_file = catfile('translations', $lang, $local_master_file);
 
-                my $map_locale_action = "map-locale $local_master_file $language_code $translation_file";
+                my $map_locale_action = "map-locale $full_master_file $language_code $translation_file";
 
                 $cli_return = $self->run_gl_cli($map_locale_action);
             }
         }
     }
-    
+
     return 0;
 }
 
-sub find_local_master_files {
+sub local_master_files {
     my ($self) = @_;
 
     my @local_master_files = ();
 
+    my $master_file_path = catfile($self->{data}->{root_directory}, 'master');
+
     find(sub {
-        push @local_master_files, $File::Find::name if(-f $_);
-    }, $self->{data}->{root_directory});
+        push @local_master_files, abs2rel($File::Find::name, $master_file_path) if(-f $_);
+    }, $master_file_path);
 
     return @local_master_files;
 }
 
-sub parse_json_translations {
+sub server_master_files {
     my ($self, $json) = @_;
 
-    return ();
+    my $json_tree = $self->parse_json($json);
+
+    my @master_files = map { $_->{master_file} } @$json_tree;
+
+    my @unique_master_files = $self->unique_values(\@master_files);
+
+    return @unique_master_files;
+}
+
+sub unique_values {
+    my ($self, $values) = @_;
+
+    my @unique;
+    my %seen;
+
+    foreach my $value (@$values) {
+        if (! $seen{$value}) {
+            push @unique, $value;
+            $seen{$value} = 1;
+        }
+    }
+
+    return @unique;
 }
 
 sub parse_json {

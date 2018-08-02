@@ -7,8 +7,9 @@ use parent Serge::Sync::Plugin::Base::TranslationService, Serge::Interface::SysC
 use strict;
 
 use Serge::Util qw(subst_macros);
+use version;
 
-our $VERSION = '0.10';
+our $VERSION = qv('0.903.0');
 
 sub name {
     return 'Zanata translation server (http://zanata.org/) synchronization plugin';
@@ -28,7 +29,10 @@ sub init {
         user_config    => 'STRING',
         # Type of push to perform on the server:
         #   source  pushes source documents only
-        #   both (default) pushes both source and translation documents
+        #   both (default) pushes both source and translation documents,
+        # Whether to bring only approved translations or also include only translated but not approved
+        # Requires Zanata 4.6 (if using Zanata 4.5 or less set to false)
+        approved_only  => 'BOOLEAN',
         push_type      => 'STRING',
         # The base directory for storing zanata cache files. Default is current directory.
         cache_dir      => 'STRING',
@@ -37,7 +41,9 @@ sub init {
         # Whether to purge the cache before performing the pull operation
         purge_cache    => 'BOOLEAN',
         # File types to locate and transmit to the server when using project type 'file'
-        file_types     => 'ARRAY'
+        file_types     => 'ARRAY',
+        # JAVA_HOME environment variable
+        java_home      => 'STRING'
     });
 }
 
@@ -53,6 +59,8 @@ sub validate_data {
     $self->{data}->{use_cache} = subst_macros($self->{data}->{use_cache});
     $self->{data}->{purge_cache} = subst_macros($self->{data}->{purge_cache});
     $self->{data}->{file_types} = subst_macros($self->{data}->{file_types});
+    $self->{data}->{java_home} = subst_macros($self->{data}->{java_home});
+    $self->{data}->{approved_only} = subst_macros($self->{data}->{approved_only});
 
     die "'project_config' not defined" unless defined $self->{data}->{project_config};
     die "'project_config', which is set to '$self->{data}->{project_config}', does not point to a valid file.\n" unless -f $self->{data}->{project_config};
@@ -65,6 +73,10 @@ sub validate_data {
         die "'user_config', which is set to '$self->{data}->{user_config}', does not point to a valid file.\n" unless -f $self->{data}->{user_config};
     }
 
+    if (defined $self->{data}->{java_home}) {
+        die "'java_home', which is set to '$self->{data}->{java_home}', does not point to a valid dir.\n" unless -d $self->{data}->{java_home};
+    }
+
     if (!(defined $self->{data}->{push_type})) {
         $self->{data}->{push_type} = 'both';
     }
@@ -72,6 +84,8 @@ sub validate_data {
     if (($self->{data}->{push_type} ne 'both') and ($self->{data}->{push_type} ne 'source')) {
         die "'push_type', which is set to $self->{data}->{push_type}, is not one of the valid options: 'source' or 'both'";
     }
+
+    $self->{data}->{approved_only} = 1 if not defined $self->{data}->{approved_only};
 }
 
 sub run_zanata_cli {
@@ -80,6 +94,10 @@ sub run_zanata_cli {
     my $command = '--batch-mode '.$action;
 
     $command .= ' --project-config '.$self->{data}->{project_config};
+
+    if (defined $self->{data}->{java_home}) {
+        $ENV{'JAVA_HOME'} = $self->{data}->{java_home};
+    }
 
     if (defined $self->{data}->{user_config}) {
         $command .= ' --user-config '.$self->{data}->{user_config};
@@ -122,6 +140,10 @@ sub pull_ts {
 
     if (defined $self->{data}->{purge_cache}) {
         $action .= ' --purge-cache '.$self->to_boolean($self->{data}->{purge_cache});
+    }
+
+    if ($self->{data}->{approved_only}) {
+        $action .= ' --approved ';
     }
 
     return $self->run_zanata_cli($action, $langs);

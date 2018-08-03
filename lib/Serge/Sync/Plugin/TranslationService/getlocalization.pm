@@ -72,21 +72,21 @@ sub push_ts {
         return $cli_return;
     }
 
-    $cli_return = $self->run_gl_cli('push');
+    $cli_return = $self->run_gl_cli('push', 0, 1);
 
     if ($cli_return != 0) {
         return $cli_return;
     }
 
     if ($self->{data}->{push_translations}) {
-        $cli_return = $self->run_gl_cli('push-tr');
+        $cli_return = $self->run_gl_cli('push-tr --force');
     }
 
     return $cli_return;
 }
 
 sub run_gl_cli {
-    my ($self, $action, $capture) = @_;
+    my ($self, $action, $capture, $ignore_codes) = @_;
 
     my $cli_return = 0;
 
@@ -96,13 +96,7 @@ sub run_gl_cli {
     print "Running '$command -u <username> -p <password>'...\n";
     $command .= ' -u '.$self->{data}->{username}.' -p '.$self->{data}->{password};
 
-    # {
-    #     local $CWD = $self->{data}->{root_directory};
-    #
-    #     $cli_return = $self->run_cmd($command, $capture);
-    # }
-
-    $cli_return = $self->run_in($self->{data}->{root_directory}, $command, $capture);
+    $cli_return = $self->run_in($self->{data}->{root_directory}, $command, $capture, $ignore_codes);
 
     return $cli_return;
 }

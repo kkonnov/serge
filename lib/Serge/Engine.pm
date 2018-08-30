@@ -1168,6 +1168,11 @@ sub get_full_ts_file_path {
 sub generate_ts_files_for_file_lang {
     my ($self, $file, $lang) = @_;
 
+    # skip generating TS files for source language (it is added in `output_default_lang_file` mode implicitly)
+    return if ($lang eq $self->{job}->{source_language});
+
+    my $fullpath = $self->{job}->get_full_ts_file_path($file, $lang);
+
     my $result = combine_and(1, $self->run_callbacks('can_generate_ts_file', $file, $lang));
     if ($result eq '0') {
         print "\t\tSkip generating TS file for $file:$lang because at least one callback returned 0\n" if $self->{debug};

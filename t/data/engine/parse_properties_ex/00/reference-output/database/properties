@@ -20,7 +20,7 @@ properties
     17    18 source:ts:1:test_job:test
           f3718580f2dd365aafcc0035dd375fa0
     18    19 job-hash:test_namespace:test_job
-          b85e105d9f41be39707e23f8d51a2f88
+          7fa5ca2a0521edee760f127ba9454f50
     19    20 job-plugin:test_namespace:test_job parse_properties_ex.
     20    21 job-serializer-plugin:test_namespace:test_job
           serialize_po.

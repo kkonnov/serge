@@ -1,3 +1,5 @@
+# ABSTRACT: Lingohub translation server (https://www.lingohub.com) synchronization plugin
+
 package Serge::Sync::Plugin::TranslationService::lingohub;
 use parent Serge::Sync::Plugin::Base::TranslationService, Serge::Interface::SysCmdRunner;
 
@@ -6,6 +8,10 @@ use strict;
 use File::Find qw(find);
 use File::Spec::Functions qw(catfile abs2rel);
 use Serge::Util qw(subst_macros);
+
+use version;
+
+our $VERSION = qv('0.900.0');
 
 sub name {
     return 'Lingohub translation server (https://www.lingohub.com) synchronization plugin';

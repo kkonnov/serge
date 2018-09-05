@@ -124,8 +124,6 @@ sub find_lang_files {
 
     my @files = ();
 
-    # my $master_file_path = catfile($self->{data}->{root_directory}, 'master');
-
     find(sub {
         push @files, abs2rel($File::Find::name, $directory) if(-f $_);
     }, $directory);

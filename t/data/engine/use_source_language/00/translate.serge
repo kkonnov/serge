@@ -1,0 +1,47 @@
+jobs
+{
+    {
+        @inherit                                 ../../common.serge#job_template
+        source_match                             \.xml$
+        destination_languages                    en-gb en-us
+
+        parser
+        {
+            plugin                               parse_android
+        }
+
+        callback_plugins
+        {
+            :use_source_language
+            {
+                plugin                           use_source_language
+                phase                            get_translation
+
+                data
+                {
+                    destination_languages        en-gb
+                }
+            }
+
+            {
+                plugin                           replace_strings
+                phase                            rewrite_translation
+
+                data
+                {
+                    if
+                    {
+                        lang_matches              en-gb
+
+                        then
+                        {
+                            replace                      accommodations accommodation g
+                            replace                      airplane aeroplane g
+                            replace                      aluminum aluminium g
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

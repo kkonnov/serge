@@ -1,0 +1,24 @@
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: en_US\n"
+"Generated-By: Serge 1.3\n"
+
+#. string1
+#: File: strings.xml
+#: ID: dd3dad943817a571a4094095f321db5d
+msgid "accommodations 1"
+msgstr ""
+
+#. string2
+#: File: strings.xml
+#: ID: b6ed4f963a328fb8cb53a9a86096a63a
+msgid "airplane 2"
+msgstr ""
+
+#. string3
+#: File: strings.xml
+#: ID: 30089362ad6bbf989b9db600250e0f11
+msgid "aluminum 3"
+msgstr ""

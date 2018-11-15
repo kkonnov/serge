@@ -1,9 +1,14 @@
+# ABSTRACT: Transifex translation server (https://www.transifex.com) synchronization plugin
+
 package Serge::Sync::Plugin::TranslationService::transifex;
 use parent Serge::Sync::Plugin::Base::TranslationService, Serge::Interface::SysCmdRunner;
 
 use strict;
 
 use Serge::Util qw(subst_macros);
+use version;
+
+our $VERSION = qv('0.900.0');
 
 sub name {
     return 'Transifex translation server (https://www.transifex.com) synchronization plugin';

@@ -1,9 +1,14 @@
+# ABSTRACT: Crowdin translation server (https://crowdin.com) synchronization plugin
+
 package Serge::Sync::Plugin::TranslationService::crowdin;
 use parent Serge::Sync::Plugin::Base::TranslationService, Serge::Interface::SysCmdRunner;
 
 use strict;
 
 use Serge::Util qw(subst_macros);
+use version;
+
+our $VERSION = qv('0.900.0');
 
 sub name {
     return 'Crowdin translation server (https://crowdin.com) synchronization plugin';

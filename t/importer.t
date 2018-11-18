@@ -4,13 +4,13 @@ use strict;
 
 # HOW TO USE THIS TEST
 #
-# By default, this test runs over all directories in t/data/engine/.  To run
+# By default, this test runs over all directories in t/data/importer/.  To run
 # the test only for specific directories, pass the directory names to this
-# script or assign them to the environment variable SERGE_ENGINE_TESTS as a
+# script or assign them to the environment variable SERGE_IMPORTER_TESTS as a
 # comma-separated list.  The following two examples are equivalent:
 #
-# perl t/engine.t parse_json parse_strings
-# SERGE_ENGINE_TESTS=parse_json,parse_strings prove t/engine.t
+# perl t/importer.t parse_json parse_strings
+# SERGE_IMPORTER_TESTS=parse_json,parse_strings prove t/importer.t
 
 BEGIN {
     use Cwd qw(abs_path);
@@ -29,41 +29,41 @@ use Test::Config;
 use Test::Diff;
 use Test::More;
 use Test::DB::Dumper;
-use Serge::Engine;
+use Serge::Importer;
 use Serge::Engine::Job;
 
 $| = 1; # disable output buffering
 
 # to get the same results between tests,
 # we override the `file_mtime` function to return a constant value;
-# Serge::Engine automatically imports this function from Serge::Util
-# (this is why it actually appears in Serge::Engine namespace)
-sub Serge::Engine::file_mtime {
+# Serge::Importer automatically imports this function from Serge::Util
+# (this is why it actually appears in Serge::Importer namespace)
+sub Serge::Importer::file_mtime {
     return 12345678;
 }
 
 my $this_dir = dirname(abs_path(__FILE__));
-my $tests_dir = catfile($this_dir, 'data', 'engine');
+my $tests_dir = catfile($this_dir, 'data', 'importer');
 
-my @confs;
+my @importer_confs;
 
 my ($init_references);
 
 GetOptions("init" => \$init_references);
 
-my @dirs = @ARGV;
-if (my $env_dirs = $ENV{SERGE_ENGINE_TESTS}) {
-    push @dirs, split(/,/, $env_dirs);
+my @importer_dirs = @ARGV;
+if (my $env_dirs = $ENV{SERGE_IMPORTER_TESTS}) {
+    push @importer_dirs, split(/,/, $env_dirs);
 }
 
-unless (@dirs) {
+unless (@importer_dirs) {
     find(sub {
-        push @confs, $File::Find::name if(-f $_ && /\.serge$/ && $_ ne 'common.serge');
+        push @importer_confs, $File::Find::name if(-f $_ && /\.serge$/ && $_ ne 'common.serge');
     }, $tests_dir);
 } else {
-    for my $dir (@dirs) {
+    for my $dir (@importer_dirs) {
         find(sub {
-            push @confs, $File::Find::name if(-f $_ && /\.serge$/ && $_ ne 'common.serge');
+            push @importer_confs, $File::Find::name if(-f $_ && /\.serge$/ && $_ ne 'common.serge');
         }, catfile($tests_dir, $dir));
     }
 }
@@ -89,8 +89,7 @@ sub delete_directory {
     }
 }
 
-
-for my $config_file (@confs) {
+for my $config_file (@importer_confs) {
 
     subtest "Test config: $config_file" => sub {
         my $cfg = Test::Config->new($config_file);
@@ -106,7 +105,7 @@ for my $config_file (@confs) {
                 delete_directory($cfg->reference_output_path);
             }
 
-            my $engine = Serge::Engine->new();
+            my $engine = Serge::Importer->new();
             $engine->{optimizations} = undef; # force generate all the files
             $cfg->chdir;
 

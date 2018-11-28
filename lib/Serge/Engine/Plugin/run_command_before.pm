@@ -1,4 +1,4 @@
-package Serge::Engine::Plugin::run_command;
+package Serge::Engine::Plugin::run_command_before;
 use parent Serge::Engine::Plugin::if;
 
 use strict;
@@ -8,7 +8,7 @@ use File::Basename;
 use Serge::Util qw(remove_flags set_flag subst_macros);
 
 sub name {
-    return 'Run shell command plugin';
+    return 'Run shell command plugin before loading the file';
 }
 
 sub init {
@@ -33,7 +33,7 @@ sub init {
     });
 
     $self->add({
-        after_save_localized_file => \&check
+        before_load_file => \&check
     });
 }
 
@@ -55,22 +55,22 @@ sub adjust_phases {
     my ($self, $phases) = @_;
 
     # remove unused flags added by default by the parent 'if' plugin
-    remove_flags($phases, qw(before_load_file after_load_file after_load_source_file_for_processing before_save_localized_file));
+    remove_flags($phases, qw(after_save_localized_file after_load_file after_load_source_file_for_processing before_save_localized_file));
 
-    # always tie to 'after_save_localized_file' phase
-    set_flag($phases, 'after_save_localized_file');
+    # always tie to 'before_load_file' phase
+    set_flag($phases, 'before_load_file');
 
     # this plugin makes sense only when applied to a single phase
     # (in addition to 'before_job' phase inherited from Serge::Engine::Plugin::if plugin)
-    die "This plugin needs to be attached to only one 'after_save_localized_file' phase" unless @$phases == 2;
+    die "This plugin needs to be attached to only one 'before_load_file' phase" unless @$phases == 2;
 }
 
 sub process_then_block {
     my ($self, $phase, $block, $file, $lang, $strref) = @_;
 
-    die "This plugin should only be used in 'after_save_localized_file' phase (current phase: '$phase')" unless $phase eq 'after_save_localized_file';
+    die "This plugin should only be used in 'before_load_file' phase (current phase: '$phase')" unless $phase eq 'before_load_file';
 
-    my $outfile = $self->{parent}->{engine}->get_full_output_path($file, $lang);
+    my $outfile = $file;
     ($_, my $outpath, $_) = fileparse($outfile); # this way $outpath will include the trailing delimiter
 
     foreach my $command (@{$block->{command}}) {

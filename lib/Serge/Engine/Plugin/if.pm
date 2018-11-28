@@ -81,6 +81,7 @@ sub init {
 
     $self->add({
         before_job => \&before_job,
+        before_load_file => \&check,
         after_load_file => \&check,
         after_load_source_file_for_processing => \&check_file_content,
         before_deserialize_ts_file => \&check_file_content,

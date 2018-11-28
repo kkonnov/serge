@@ -703,7 +703,6 @@ sub parse_source_file {
     $self->clear_disambiguation_cache;
 
     # Parsing the file
-
     eval {
         $self->{job}->{parser_object}->parse(\$src, sub { $self->parse_source_file_callback(@_) });
     };
@@ -746,6 +745,10 @@ sub parse_source_file {
 
 sub read_file {
     my ($self, $fname, $calc_hash) = @_;
+
+    my $empty = '';
+
+    $self->run_callbacks('before_load_file', $fname, $self->{job}->{source_language}, \$empty);
 
     my $data = read_and_normalize_file($fname);
 

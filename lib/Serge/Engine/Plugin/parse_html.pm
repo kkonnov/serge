@@ -105,7 +105,7 @@ sub parse {
 
     # Now, in a second pass, export all localizable strings and generate the localized output
 
-    $self->parse_tag_recursively('', $tree, $callbackref, $source_html_lang, $html_lang);
+    $self->parse_tag_recursively('', $tree, $callbackref, $source_html_lang, $html_lang, $lang);
 
     $XML::LibXML::skipXMLDeclaration = 1;
     $XML::LibXML::skipDTD = 1;
@@ -232,7 +232,7 @@ sub analyze_tag_recursively {
 }
 
 sub parse_tag_recursively {
-    my ($self, $name, $subtree, $callbackref, $source_lang, $lang, $prohibit, $cdata, $context) = @_;
+    my ($self, $name, $subtree, $callbackref, $source_html_lang, $html_lang, $lang, $prohibit, $cdata, $context) = @_;
     my $attrs = $self->get_attributes($subtree);
     my $id_attributes = {};
 
@@ -295,7 +295,7 @@ sub parse_tag_recursively {
             my $node_name = $child_node->nodeName;
 
             # if we are going to translate this tag as a whole, then prohibit translation for the entire subtree
-            $self->parse_tag_recursively($node_name, $child_node, $callbackref, $source_lang, $lang, $prohibit_children, $cdata, $context);
+            $self->parse_tag_recursively($node_name, $child_node, $callbackref, $source_html_lang, $html_lang, $lang, $prohibit_children, $cdata, $context);
         }
     }
 
@@ -306,10 +306,10 @@ sub parse_tag_recursively {
     # (as terminal localizable tags will be extracted later as a whole, with all attributes,
     # so there is no need to extract attributes separately)
 
-    if ($lang and $attrs->{lang}) {
-        if ($lang and exists $attrs->{lang} and $attrs->{lang} eq $source_lang and $source_lang ne $lang)
+    if ($html_lang and $attrs->{html_lang}) {
+        if ($html_lang and exists $attrs->{html_lang} and $attrs->{html_lang} eq $source_html_lang and $source_html_lang ne $html_lang)
         {
-            $subtree->setAttribute('lang', $lang);
+            $subtree->setAttribute('html_lang', $html_lang);
         }
     }
 
@@ -317,7 +317,7 @@ sub parse_tag_recursively {
     # to have the proper content value, e.g. "pt-br"
 
     if ((lc($name) eq 'meta') && (lc($attrs->{'http-equiv'}) eq 'content-language')) {
-        $subtree->setAttribute('content', $lang);
+        $subtree->setAttribute('content', $html_lang);
     }
 
     my @sorted_attributes_keys = sort (keys %$attrs);

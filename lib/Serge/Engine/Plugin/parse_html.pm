@@ -306,10 +306,10 @@ sub parse_tag_recursively {
     # (as terminal localizable tags will be extracted later as a whole, with all attributes,
     # so there is no need to extract attributes separately)
 
-    if ($html_lang and $attrs->{html_lang}) {
-        if ($html_lang and exists $attrs->{html_lang} and $attrs->{html_lang} eq $source_html_lang and $source_html_lang ne $html_lang)
+    if ($html_lang and $attrs->{lang}) {
+        if ($html_lang and exists $attrs->{lang} and $attrs->{lang} eq $source_html_lang and $source_html_lang ne $html_lang)
         {
-            $subtree->setAttribute('html_lang', $html_lang);
+            $subtree->setAttribute('lang', $html_lang);
         }
     }
 

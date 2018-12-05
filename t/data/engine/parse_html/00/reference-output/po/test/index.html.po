@@ -11,17 +11,17 @@ msgstr ""
 msgid "baz"
 msgstr "ḃáž"
 
-#. second_image.title
-#: File: index.html
-#: ID: 9f0e7bee1fbb5eec8cddb8ebb7d10355
-msgid "localizable title attribute text"
-msgstr "ļőçáļĩžáḃļē ţĩţļē áţţŕĩḃũţē ţēҳţ"
-
 #. second_image.alt
 #: File: index.html
 #: ID: 34425ef5fe06102e2de17ce406e1c917
 msgid "localizable alt attribute text"
 msgstr "ļőçáļĩžáḃļē áļţ áţţŕĩḃũţē ţēҳţ"
+
+#. second_image.title
+#: File: index.html
+#: ID: 9f0e7bee1fbb5eec8cddb8ebb7d10355
+msgid "localizable title attribute text"
+msgstr "ļőçáļĩžáḃļē ţĩţļē áţţŕĩḃũţē ţēҳţ"
 
 #. third_image.alt
 #: File: index.html

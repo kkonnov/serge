@@ -140,8 +140,7 @@ sub analyze_tag_recursively {
         $the_current_lang = $attrs->{lang};
     }
 
-    my $node_path = $subtree->nodePath;
-
+    # my $node_path = $subtree->nodePath;
     # print "parsing ['$id' '$node_path' '$the_current_lang' '$attrs->{lang}' $expected_lang]\n";
 
     if ($the_current_lang eq $expected_lang) {
@@ -321,8 +320,10 @@ sub parse_tag_recursively {
         $subtree->setAttribute('content', $lang);
     }
 
+    my @sorted_attributes_keys = sort (keys %$attrs);
+
     if ($translate_attrs) {
-        foreach my $key (keys %$attrs) {
+        foreach my $key (@sorted_attributes_keys) {
             my $val = $attrs->{$key};
 
             my $can_translate_attr = $self->can_translate_attribute($key, $val, $name, $attrs);

@@ -1,0 +1,21 @@
+strings
+{
+    0     1 2 baz NO 0
+    1     2 4 `localizable alt attribute text` NO 0
+    2     3 6 `localizable title attribute text` NO 0
+    3     4 8 `localizable image` NO 0
+    4     5 10 `localizable string 2` NO 0
+    5     6 12 `Table of Contents` NO 0
+    6     7 14 `Topic 1` NO 0
+    7     8 16 `Topic 2` NO 0
+    8     9 18 `Topic 3` NO 0
+    9     10 20 `Topic 1` topic1 0
+    10    11 22 `Paragraph 1` NO 0
+    11    12 24 `Topic 2` topic2 0
+    12    13 26 `Paragraph 2` NO 0
+    13    14 28 `Paragraph 3, Sentence 1.` NO 0
+    14    15 30 `Paragraph 3, Sentence 2.` NO 0
+    15    16 32 `Item 1` NO 0
+    16    17 34 `Item 2` NO 0
+    17    18 36 `Item 3` NO 0
+}

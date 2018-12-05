@@ -1,0 +1,17 @@
+jobs
+{
+    {
+        @inherit                                 ../../common.serge#job_template
+
+        source_match                             \.(htm|html)$
+        destination_languages                    fr-ca
+        normalize_strings                        YES
+
+        output_file_path                         ./localized-resources/%LOCALE%/%FILE%
+
+        parser
+        {
+            plugin                               parse_html
+        }
+    }
+}

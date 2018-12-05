@@ -1,0 +1,58 @@
+<html><body>
+<div id="header" lang="fr-CA">
+    <!-- another way to mark image as translatable (this will work on terminal tags only like <img />) -->
+    <img id="first_image" src="x.png" alt="basse" />
+
+    <!-- the following line was enclosed in <span lang=""> and will be explicitly excluded from translation -->
+    <p id="copyright" lang="">&copy; 2012 ACME Corporation</p>
+
+    <!-- in the following image, 'alt' and 'title' attributes will be extracted -->
+    <img id="second_image" src="x" alt="texte d'attribut alt localisable" title="texte d'attribut de titre localisable" />
+
+    <!-- the following image will be extracted as a whole -->
+    <img id="third_image" src="x.png" alt="image localisable" />
+
+    <!-- the following image 'alt' and 'title' attributes will NOT be extracted -->
+    <img id="fourth_image" lang="" src="x.png" alt="non-localizable alt attribute text" title="non-localizable title attribute text" />
+
+    <!-- the following block will not be localized by default unless the lang="fr-CA" option will be provided-->
+    <div lang="">
+        <span>Test</span>
+        <ul>
+            <li id="string_1">non-localizable string 1</li>
+            <li id="string_2" lang="fr-CA">chaîne localisable 2</li>
+        </ul>
+    </div>
+</div>
+
+<div id="content" lang="fr-CA">
+    <!-- <h1>..<h7>, <p> and <li> will be translated by default unless the lang="" attribute is set on them -->
+
+    <h2 id="toc">Table des matières</h2>
+    <ul>
+        <!-- in the following two lines, the <li> will not be translated as it contains
+        the only <a> tag that is explicitly told to be the translation item -->
+        <li><a id="tc_topic_1" href="#topic1">Sujet 1</a></li>
+        <li><a id="tc_topic_2" href="#topic2">Sujet 2</a></li>
+
+        <!-- in the subsequent lines, the <li> item will be the default translation item (default behavior) -->
+        <li><a id="tc_topic_3" href="#topic3">Sujet 3</a></li>
+    </ul>
+
+    <h2 id="topic1">Sujet 1</h2>
+    <p id="para1">Paragraphe 1</p>
+
+    <h2 id="topic2">Sujet 2</h2>
+    <p id="para2">Paragraphe 2</p>
+
+    <h2 id="topic3" lang="">Serge</h2>
+    <!-- One can manually segment large paragraphs (split them into separate translatable sentences) -->
+    <p><span id="p3_sentence1" lang="fr-CA">Paragraphe 3, phrase 1.</span> <span id="p3_sentence2" lang="fr-CA">Paragraphe 3, phrase 2</span></p>
+
+    <ul>
+        <li id="item_1">Point 1</li>
+        <li id="item_2">Point 2</li>
+        <li id="item_3">Point 3</li>
+    </ul>
+</div><!-- /content -->
+</body></html>

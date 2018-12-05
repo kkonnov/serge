@@ -1,0 +1,21 @@
+translations
+{
+    0     1 38 1 fr-CA basse NO 0 0
+    1     2 39 2 fr-CA `texte d'attribut alt localisable` NO 0 0
+    2     3 40 3 fr-CA `texte d'attribut de titre localisable` NO 0 0
+    3     4 41 4 fr-CA `image localisable` NO 0 0
+    4     5 42 5 fr-CA `chaîne localisable 2` NO 0 0
+    5     6 43 6 fr-CA `Table des matières` NO 0 0
+    6     7 44 7 fr-CA `Sujet 1` NO 0 0
+    7     8 45 8 fr-CA `Sujet 2` NO 0 0
+    8     9 46 9 fr-CA `Sujet 3` NO 0 0
+    9     10 47 10 fr-CA `Sujet 1` NO 0 0
+    10    11 48 11 fr-CA `Paragraphe 1` NO 0 0
+    11    12 49 12 fr-CA `Sujet 2` NO 0 0
+    12    13 50 13 fr-CA `Paragraphe 2` NO 0 0
+    13    14 51 14 fr-CA `Paragraphe 3, phrase 1.` NO 0 0
+    14    15 52 15 fr-CA `Paragraphe 3, phrase 2` NO 0 0
+    15    16 53 16 fr-CA `Point 1` NO 0 0
+    16    17 54 17 fr-CA `Point 2` NO 0 0
+    17    18 55 18 fr-CA `Point 3` NO 0 0
+}

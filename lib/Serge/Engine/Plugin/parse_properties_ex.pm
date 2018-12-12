@@ -81,8 +81,8 @@ sub parse {
         } else {
             if ($line =~ m/^[\t ]*(.*?[^\\])(?:[\t ]*[=:][\t ]*| )[\t ]*(.*)$/) { # a parameter line
                 if (!exists $flags{internal}) {
-                    $property_key = $hint = $1;
-                    $hint =~ s/[\t ]+$//; # trim from the right
+                    $property_key = $context = $1;
+                    $context =~ s/[\t ]+$//; # trim from the right
                     $orig_str = $2;
 
                     # convert value from the array to a string representation

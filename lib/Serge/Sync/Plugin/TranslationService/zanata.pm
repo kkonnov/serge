@@ -10,7 +10,7 @@ use strict;
 use Serge::Util qw(subst_macros);
 use version;
 
-our $VERSION = qv('0.904.0');
+our $VERSION = qv('0.905.0');
 
 sub name {
     return 'Zanata translation server (http://zanata.org/) synchronization plugin';
@@ -63,7 +63,6 @@ sub validate_data {
     $self->{data}->{use_cache} = subst_macros($self->{data}->{use_cache});
     $self->{data}->{purge_cache} = subst_macros($self->{data}->{purge_cache});
     $self->{data}->{file_types} = subst_macros($self->{data}->{file_types});
-    $self->{data}->{java_home} = subst_macros($self->{data}->{java_home});
     $self->{data}->{debug} = subst_macros($self->{data}->{debug});
     $self->{data}->{errors} = subst_macros($self->{data}->{errors});
     $self->{data}->{disable_ssl_cert} = subst_macros($self->{data}->{disable_ssl_cert});

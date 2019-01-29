@@ -12,11 +12,13 @@ sub parse {
 
     die 'callbackref not specified' unless $callbackref;
 
-    my $source_text = $$textref;
+    my $translated_text = $$textref;
 
-    my $translated_str = &$callbackref($source_text, 'text', undef, undef, $lang, 'text');
+    if ($translated_text ne '') {
+        $translated_text = &$callbackref($translated_text, 'text', undef, undef, $lang, 'text');
+    }
 
-    return $translated_str;
+    return $translated_text;
 }
 
 1;

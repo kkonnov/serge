@@ -23,7 +23,10 @@ sub init {
 
     $self->merge_schema({
         config_file => 'STRING',
-        upload_translations => 'BOOLEAN'
+        upload_translations => 'BOOLEAN',
+        import_duplicates => 'BOOLEAN',
+        import_eq_suggestions => 'BOOLEAN',
+        auto_approve_imported => 'BOOLEAN',
     });
 }
 
@@ -34,15 +37,21 @@ sub validate_data {
 
     $self->{data}->{config_file} = subst_macros($self->{data}->{config_file});
     $self->{data}->{upload_translations} = subst_macros($self->{data}->{upload_translations});
+    $self->{data}->{import_duplicates} = subst_macros($self->{data}->{import_duplicates});
+    $self->{data}->{import_eq_suggestions} = subst_macros($self->{data}->{import_eq_suggestions});
+    $self->{data}->{auto_approve_imported} = subst_macros($self->{data}->{auto_approve_imported});
 
     die "'config_file' not defined" unless defined $self->{data}->{config_file};
     die "'config_file', which is set to '$self->{data}->{config_file}', does not point to a valid file.\n" unless -f $self->{data}->{config_file};
 
     $self->{data}->{upload_translations} = 1 unless defined $self->{data}->{upload_translations};
+    $self->{data}->{import_duplicates} = 0 unless defined $self->{data}->{import_duplicates};
+    $self->{data}->{import_eq_suggestions} = 0 unless defined $self->{data}->{import_eq_suggestions};
+    $self->{data}->{auto_approve_imported} = 0 unless defined $self->{data}->{auto_approve_imported};
 }
 
 sub run_crowdin_cli {
-    my ($self, $action, $langs, $capture) = @_;
+    my ($self, $action, $langs, $flags, $capture) = @_;
 
     my $command = $action;
 
@@ -54,6 +63,7 @@ sub run_crowdin_cli {
     }
 
     $command .= ' --config '.$self->{data}->{config_file};
+    $command .= ' '.join(' ', @$flags) if defined $flags && @$flags > 0;
 
     $command = 'crowdin '.$command;
     print "Running '$command'...\n";
@@ -76,7 +86,17 @@ sub push_ts {
     }
 
     if ($self->{data}->{upload_translations}) {
-        $cli_return = $self->run_crowdin_cli('upload translations', $langs);
+        my @flags = ();
+        if ($self->{data}->{import_duplicates}) {
+            push @flags, q/--import-duplicates/
+        }
+        if ($self->{data}->{import_eq_suggestions}) {
+            push @flags, q/--import-eq-suggestions/
+        }
+        if ($self->{data}->{auto_approve_imported}) {
+            push @flags, q/--auto-approve-imported/
+        }
+        $cli_return = $self->run_crowdin_cli('upload translations', $langs, \@flags);
     }
 
     return $cli_return;

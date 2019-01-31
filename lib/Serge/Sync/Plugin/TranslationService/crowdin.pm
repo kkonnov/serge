@@ -51,7 +51,7 @@ sub validate_data {
 }
 
 sub run_crowdin_cli {
-    my ($self, $action, $langs, $flags, $capture) = @_;
+    my ($self, $action, $langs, $capture) = @_;
 
     my $command = $action;
 
@@ -63,7 +63,6 @@ sub run_crowdin_cli {
     }
 
     $command .= ' --config '.$self->{data}->{config_file};
-    $command .= ' '.join(' ', @$flags) if defined $flags && @$flags > 0;
 
     $command = 'crowdin '.$command;
     print "Running '$command'...\n";
@@ -86,17 +85,17 @@ sub push_ts {
     }
 
     if ($self->{data}->{upload_translations}) {
-        my @flags = ();
+        my $action = 'upload translations';
         if ($self->{data}->{import_duplicates}) {
-            push @flags, q/--import-duplicates/
+            $action .= ' --import-duplicates';
         }
         if ($self->{data}->{import_eq_suggestions}) {
-            push @flags, q/--import-eq-suggestions/
+            $action .= ' --import-eq-suggestions'
         }
         if ($self->{data}->{auto_approve_imported}) {
-            push @flags, q/--auto-approve-imported/
+            $action .= ' --auto-approve-imported'
         }
-        $cli_return = $self->run_crowdin_cli('upload translations', $langs, \@flags);
+        $cli_return = $self->run_crowdin_cli($action, $langs);
     }
 
     return $cli_return;

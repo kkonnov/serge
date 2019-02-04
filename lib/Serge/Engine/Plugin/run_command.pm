@@ -33,6 +33,7 @@ sub init {
     });
 
     $self->add({
+        before_update_database_from_source_files => \&process_before_job,
         after_save_localized_file => \&check
     });
 }
@@ -54,15 +55,39 @@ sub validate_data {
 sub adjust_phases {
     my ($self, $phases) = @_;
 
+    # always inherit 'before_job' phase from Serge::Engine::Plugin::if plugin
+    $self->SUPER::adjust_phases($phases);
+
     # remove unused flags added by default by the parent 'if' plugin
     remove_flags($phases, qw(after_load_file after_load_source_file_for_processing before_save_localized_file before_deserialize_ts_file after_serialize_ts_file));
 
-    # always tie to 'after_save_localized_file' phase
-    set_flag($phases, 'after_save_localized_file');
-
     # this plugin makes sense only when applied to a single phase
     # (in addition to 'before_job' phase inherited from Serge::Engine::Plugin::if plugin)
-    die "This plugin needs to be attached to only one 'after_save_localized_file' phase" unless @$phases == 2;
+    die "This plugin needs to be attached to only one of 'after_save_localized_file' or 'before_update_database_from_source_files' phase" unless @$phases == 2;
+}
+
+sub process_before_job {
+    my ($self, $phase) = @_;
+
+    die "This plugin should only be used in 'before_update_database_from_source_files' phase (current phase: '$phase')" unless $phase eq 'before_update_database_from_source_files';
+
+    my $source_dir = $self->{parent}->{source_dir};
+
+    foreach my $command (@{$self->{data}->{command}}) {
+        $command = subst_macros($command);
+
+        # substitute %SOURCE_DIR% macro with the full path to the saved file
+        $command =~ s/%SOURCE_DIR%/$source_dir/sg;
+
+        die "After macro substitution, 'command' parameter evaluates to an empty string" if $command eq '';
+
+        print "RUN: $command\n";
+
+        system($command);
+
+        my $error_code = unpack 'c', pack 'C', $? >> 8; # error code
+        die "Exit code: $error_code\n" if $error_code != 0;
+    }
 }
 
 sub process_then_block {

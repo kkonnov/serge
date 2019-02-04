@@ -6,6 +6,8 @@ use strict;
 no warnings qw(uninitialized);
 
 use Serge::Util qw(subst_macros_strref);
+use YAML::XS qw(LoadFile);
+use Cwd qw(realpath);
 
 sub name {
     return 'Generic string replacement plugin';
@@ -20,10 +22,16 @@ sub init {
         replace => {'' => 'LIST',
             '*'        => 'ARRAY'
         },
+        replace_with => {'' => 'LIST',
+            '*'        => 'ARRAY'
+        },
         if => {
             '*' => {
                 then => {
                     replace => {'' => 'LIST',
+                        '*'        => 'ARRAY'
+                    },
+                    replace_with => {'' => 'LIST',
                         '*'        => 'ARRAY'
                     },
                 },
@@ -73,16 +81,37 @@ sub process_then_block {
 
     #print "::process_then_block(), phase=[$phase], block=[$block], file=[$file], lang=[$lang], strref=[$strref]\n";
 
+    my $debug = $self->{parent}->{debug};
+    my $output_lang = $lang;
+    my $r = $self->{parent}->{output_lang_rewrite};
+    $output_lang = $r->{$lang} if defined $r && exists($r->{$lang});
+
     my $rules = $block->{replace};
     foreach my $rule (@$rules) {
         my ($from, $to, $modifiers) = @$rule;
 
-        my $output_lang = $lang;
-        my $r = $self->{parent}->{output_lang_rewrite};
-        $output_lang = $r->{$lang} if defined $r && exists($r->{$lang});
+        subst_macros_strref(\$from, $file, $output_lang);
+        subst_macros_strref(\$to, $file, $output_lang);
+
+        print "[replace]::process_then_block(), from=[$from], to=[$to], modifiers=[$modifiers]\n" if $debug;
+
+        my $eval_line = "\$\$strref =~ s/$from/$to/$modifiers;";
+        eval($eval_line);
+        die "eval() failed on: '$eval_line'\n$@" if $@;
+    }
+    my $with_rules = $block->{replace_with};
+    foreach my $rule (@$with_rules) {
+        my ($with, $from, $to, $modifiers) = @$rule;
 
         subst_macros_strref(\$from, $file, $output_lang);
         subst_macros_strref(\$to, $file, $output_lang);
+        subst_macros_strref(\$with, $file, $output_lang);
+
+        my $value = $self->with_value(split(/\|/, $with));
+        $from =~ s/%VALUE%/$value/sg;
+        $to =~ s/%VALUE%/$value/sg;
+
+        print "[replace]::process_then_block(), with=[$with] from=[$from], to=[$to], modifiers=[$modifiers]\n" if $debug;
 
         my $eval_line = "\$\$strref =~ s/$from/$to/$modifiers;";
         eval($eval_line);
@@ -90,6 +119,15 @@ sub process_then_block {
     }
 
     return (shift @_)->SUPER::process_then_block(@_);
+}
+
+sub with_value {
+    my ($self, $file, $path) = @_;
+    my $data = LoadFile(realpath $file);
+    my @path = split(/\./, $path);
+    my $value = $data;
+    $value = $value->{$_} for @path;
+    return quotemeta($value);
 }
 
 sub check {

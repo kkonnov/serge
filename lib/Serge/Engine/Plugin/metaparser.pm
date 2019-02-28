@@ -128,9 +128,10 @@ sub find_context {
     my ($self) = @_;
 
     if (($self->{data}->{context} ne '') && ($self->{line} =~ m/$self->{data}->{context}/)) {
-        die "'context' pattern returned empty value" unless $1 ne '';
-        $self->{context} = $1;
-        print "context: '$1'\n" if $self->{debug};
+        my $context = defined $+{ctx} ? $+{ctx} : $1;
+        die "'context' pattern returned empty value" unless $context ne '';
+        $self->{context} = $context;
+        print "context: '$context'\n" if $self->{debug};
         return 1; # skip processing
     }
 
@@ -141,9 +142,10 @@ sub find_hint {
     my ($self) = @_;
 
     if (($self->{data}->{hint} ne '') && ($self->{line} =~ m/$self->{data}->{hint}/)) {
-        die "'hint' pattern returned empty value" unless $1 ne '';
-        push @{$self->{hints}}, $1;
-        print "hint: '$1'\n" if $self->{debug};
+        my $hint = defined $+{hint} ? $+{hint} : $1;
+        die "'hint' pattern returned empty value" unless $hint ne '';
+        push @{$self->{hints}}, $hint;
+        print "hint: '$hint'\n" if $self->{debug};
         return 1; # skip processing
     }
 
@@ -177,9 +179,10 @@ sub find_key {
     my ($self) = @_;
 
     if (($self->{data}->{key} ne '') && ($self->{line} =~ m/$self->{data}->{key}/)) {
-        die "'key' pattern returned empty value" unless $1 ne '';
-        $self->{key} = $1;
-        print "key: '$1'\n" if $self->{debug};
+        my $key = defined $+{key} ? $+{key} : $1;
+        die "'key' pattern returned empty value" unless $key ne '';
+        $self->{key} = $key;
+        print "key: '$key'\n" if $self->{debug};
         return 1; # skip processing
     }
 
@@ -190,9 +193,10 @@ sub find_value {
     my ($self) = @_;
 
     if (($self->{data}->{value} ne '') && ($self->{line} =~ m/$self->{data}->{value}/)) {
-        die "'value' pattern returned empty value" unless $1 ne '';
-        $self->{value} = $1;
-        print "value: '$1'\n" if $self->{debug};
+        my $value = defined $+{val} ? $+{val} : $1;
+        die "'value' pattern returned empty value" unless $value ne '';
+        $self->{value} = $value;
+        print "value: '$value'\n" if $self->{debug};
         return 1; # skip processing
     }
 
@@ -203,10 +207,12 @@ sub find_keyvalue {
     my ($self) = @_;
 
     if (($self->{data}->{keyvalue} ne '') && ($self->{line} =~ m/$self->{data}->{keyvalue}/)) {
-        die "'keyvalue' pattern returned empty key" unless $1 ne '';
-        die "'keyvalue' pattern returned empty string value" unless $2 ne '';
-        $self->{key} = $1;
-        $self->{value} = $2;
+        my $key = defined $+{key} ? $+{key} : $1;
+        my $value = defined $+{val} ? $+{val} : $2;
+        die "'keyvalue' pattern returned empty key" unless $key ne '';
+        die "'keyvalue' pattern returned empty string value" unless $value ne '';
+        $self->{key} = $key;
+        $self->{value} = $value;
         print "keyvalue: '$self->{key}'=>'$self->{value}'\n" if $self->{debug};
         return 1; # skip processing
     }
@@ -246,11 +252,14 @@ sub _flush {
         my $re = $self->{data}->{localize};
         $translated_str = $self->escape($translated_str);
         if ($self->{line} =~ m/$re/) {
-            die "'localize' pattern returned empty \$2 capture group" unless defined $2;
+            my $prefix = defined $+{pre} ? $+{pre} : $1;
+            my $value = defined $+{val} ? $+{val} : $2;
+            my $suffix = defined $+{suf} ? $+{suf} : $3;
+            die "'localize' pattern returned empty \$value capture group" unless defined $value;
+            $self->{line} =~ s/$re/$prefix$translated_str$suffix/;
         } else {
             die "'localize' pattern didn't match anything";
         }
-        $self->{line} =~ s/$re/$1$translated_str$3/;
     }
 }
 

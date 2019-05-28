@@ -8,7 +8,7 @@ no warnings qw(uninitialized);
 
 use File::Path;
 use Serge::Mail;
-use Serge::Util qw(xml_escape_strref xml_unescape_strref);
+use Serge::Util qw(xml_escape_strref xml_unescape_strref subst_macros);
 
 sub name {
     return 'Generic XML parser plugin';
@@ -27,6 +27,9 @@ sub init {
         node_html     => 'ARRAY',
         xml_kind      => 'STRING',
 
+        localize      => 'ARRAY',
+        with_keys     => 'BOOLEAN',
+
         email_from    => 'STRING',
         email_to      => 'ARRAY',
         email_subject => 'STRING',
@@ -40,13 +43,20 @@ sub init {
         },
     });
 
-    $self->add('after_job', \&report_errors);
+    $self->add({
+        'after_job'      => \&report_errors,
+        'rewrite_source' => \&localize_source,
+    });
 }
 
 sub validate_data {
     my $self = shift;
 
     $self->SUPER::validate_data;
+
+    if (exists $self->{data}->{localize} && @{$self->{data}->{localize}} != 2) {
+        die "Unexpected number of localize tokens: '$self->{data}->{localize}'. You should use format 'localize <attribute> <value>'";
+    }
 
     if (exists $self->{data}->{xml_kind} && ($self->{data}->{xml_kind} !~ m/^(generic|android|indesign)$/)) {
         die "Unsupported xml_kind: '$self->{data}->{xml_kind}'. You can use 'generic' (default), 'android' or 'indesign'";
@@ -127,6 +137,16 @@ $text
 
 }
 
+sub localize_source {
+    my ($self, $phase, $filerel, $lang, $source, $hint) = @_;
+    my $path = $$hint;
+    my $str = $self->get_source_string($path);
+    if (defined $str) {
+        $$source = $str;
+        print "\t\t\tsource for the path $path was substituted\n" if $self->{parent}->{debug};
+    }
+}
+
 sub parse {
     my ($self, $textref, $callbackref, $lang) = @_;
 
@@ -137,6 +157,16 @@ sub parse {
     my $node_match = $self->{data}->{node_match} || [];
     my $node_exclude = $self->{data}->{node_exclude} || [];
     my $node_html = $self->{data}->{node_html} || [];
+
+    if (exists $self->{data}->{localize}) {
+        my ($attr, $macros) = @{$self->{data}->{localize}};
+        $self->{localize_attr} = $attr;
+        if ($lang) {
+            $self->{localize_lang} = subst_macros($macros, undef, $lang);
+            my ($l) = $self->{parent}->run_callbacks('rewrite_lang_macros', $self->{localize_lang}, $lang);
+            $self->{localize_lang} = $l if $l;
+        }
+    }
 
     # Make a copy of the string as we will change it
 
@@ -326,6 +356,37 @@ sub process_text_node {
         }
     }
 
+    my $is_source = undef;
+
+    # Test if lang matches localize attribute
+    if ($ok && exists $self->{localize_attr}) {
+        my $localize_attr = $self->{localize_attr};
+        my $localize_lang = $self->{localize_lang};
+        if (exists $attrs->{$localize_attr}) {
+            my $node_lang = $attrs->{$localize_attr};
+            if ($lang) {
+                if ($node_lang ne $localize_lang) {
+                    $ok = undef;
+                    print "\t\t\tattribute $localize_attr=\"$node_lang\" doesn't match lang '$localize_lang'\n" if $self->{parent}->{debug};
+                } else {
+                    $self->mark_node_as_translated($path);
+                }
+            }
+            else {
+                $ok = undef;
+                print "\t\t\tskip localize node $localize_attr=\"$node_lang\" without lang\n" if $self->{parent}->{debug};
+            }
+        }
+        else {
+            if ($lang) {
+                $is_source = 1;
+                $ok = undef;
+                print "\t\t\tskip node without $localize_attr attribute for lang $lang\n" if $self->{parent}->{debug};
+                $self->put_source_string($path, $$strref);
+            }
+        }
+    }
+
     if ($self->{parent}->{debug}) {
         if ($ok) {
             if ($is_html) {
@@ -344,7 +405,7 @@ sub process_text_node {
     $$strref =~ s/__HTML__ENTITY__(\w+?)__/&$1;/g;
 
     # now exit if the node doesn't match the mask
-    return unless $ok;
+    return $is_source unless $ok;
 
     # in InDesign mode, strip the line break Unicode symbols since these are generally English-specific
     # (? need to verify ?)
@@ -410,10 +471,15 @@ sub process_text_node {
             # additionally unescape Android-specific stuff, if requested
             _android_unescape($strref) if ($self->{data}->{xml_kind_android});
 
+            my $key = undef;
+            if ($self->{data}->{with_keys}) {
+                $key = $path;
+            }
+
             if ($lang) {
-                $$strref = &$callbackref($$strref, undef, $path, undef, $lang);
+                $$strref = &$callbackref($$strref, undef, $path, undef, $lang, $key);
             } else {
-                &$callbackref($$strref, undef, $path, undef, undef);
+                &$callbackref($$strref, undef, $path, undef, undef, $key);
             }
 
             # escape Android-specific stuff if requested
@@ -459,13 +525,91 @@ sub _dummy_callback {
     return $s;
 }
 
+sub put_source_string {
+    my ($self, $path, $str) = @_;
+    if (!exists $self->{source_strings}) {
+        $self->{source_strings} = {};
+    }
+    $self->{source_strings}->{$path} = $str;
+}
+
+sub get_source_string {
+    my ($self, $path) = @_;
+    if (exists $self->{source_strings}->{$path}) {
+        return $self->{source_strings}->{$path};
+    }
+    return undef;
+}
+
+sub put_untranslated_node {
+    my ($self, $path, $tree) = @_;
+    if (!exists $self->{untranslated_nodes}) {
+        $self->{untranslated_nodes} = {};
+    }
+    my @nodes = (split '/', $path);
+    my $name = pop @nodes;
+    my $cur = $self->{untranslated_nodes};
+    foreach my $node (@nodes) {
+        if (!exists $cur->{$node}) {
+            $cur->{$node} = {}
+        }
+        $cur = $cur->{$node};
+    }
+    $cur->{$name} = $tree;
+}
+
+sub mark_node_as_translated {
+    my ($self, $path) = @_;
+    if (!exists $self->{untranslated_nodes}) {
+        return;
+    }
+    my @nodes = (split '/', $path);
+    my $name = pop @nodes;
+    my $cur = $self->{untranslated_nodes};
+    foreach my $node (@nodes) {
+        if (!exists $cur->{$node}) {
+            return {};
+        }
+        $cur = $cur->{$node};
+    }
+    delete $cur->{$name};
+}
+
+sub get_untranslated_nodes {
+    my ($self, $path) = @_;
+    if (!exists $self->{untranslated_nodes}) {
+        return {};
+    }
+    my @nodes = (split '/', $path);
+    my $name = pop @nodes;
+    my $cur = $self->{untranslated_nodes};
+    foreach my $node (@nodes) {
+        if (!exists $cur->{$node}) {
+            return {};
+        }
+        $cur = $cur->{$node};
+    }
+    my $res = $cur->{$name};
+    if (ref($res) eq "HASH") {
+        delete $cur->{$name};
+        return $res;
+    }
+    return {};
+}
+
+sub is_meta {
+    my ($self, $tagname) = @_;
+    return ($tagname eq '__ROOT') || ($tagname eq '__CDATA') || ($tagname eq '__COMMENT') || ($tagname eq '__PI')
+}
+
 sub render_tag_recursively {
-    my ($self, $name, $subtree, $callbackref, $lang, $path, $cdata, $parent_attrs) = @_;
+    my ($self, $name, $subtree, $callbackref, $lang, $path) = @_;
     my $attrs = $subtree->[0];
 
-    $cdata = 1 if (($name eq '__CDATA') || ($name eq '__COMMENT') || ($name eq '__PI'));
+    my $cdata = 1 if (($name eq '__CDATA') || ($name eq '__COMMENT') || ($name eq '__PI'));
 
     my $inner_xml = '';
+    my $space = undef;
 
     for (my $i = 0; $i < (scalar(@$subtree) - 1) / 2; $i++) {
         my $tagname = $subtree->[1 + $i*2];
@@ -474,7 +618,7 @@ sub render_tag_recursively {
         # do not process text inside processing instructions
         # TODO: this can potentially be a conditional option, disabled by default
         if ($tagname eq '__PI') {
-            $inner_xml .= $self->render_tag_recursively($tagname, $tagtree, \&_dummy_callback, $lang, $path, $cdata, $attrs);
+            $inner_xml .= $self->render_tag_recursively($tagname, $tagtree, \&_dummy_callback, $lang, $path);
             next;
         }
 
@@ -482,26 +626,47 @@ sub render_tag_recursively {
             # node does not contain plain text, render the subtree
 
             my $tagpath;
-            if (($tagname eq '__ROOT') || ($tagname eq '__CDATA') || ($tagname eq '__COMMENT') || ($tagname eq '__PI')) {
+            if ($self->is_meta($tagname)) {
                 $tagpath = $path;
             } else {
                 $tagpath = $path.'/'.$tagname;
             }
 
+            my $tagxml = $self->render_tag_recursively($tagname, $tagtree, $callbackref, $lang, $tagpath);
             if ($lang) {
-                $inner_xml .= $self->render_tag_recursively($tagname, $tagtree, $callbackref, $lang, $tagpath, $cdata, $attrs);
-            } else {
-                $self->render_tag_recursively($tagname, $tagtree, $callbackref, $lang, $tagpath, $cdata, $attrs);
+                $inner_xml .= $tagxml;
             }
         } else {
             # tagtree holds a string for text nodes
 
             my $str = $tagtree;
 
-            $self->process_text_node($path, $parent_attrs, \$str, $callbackref, $lang, $cdata, 1);
+            if (!defined $space && $str =~ /^\s*$/) {
+                $space = $str;
+            }
+
+            my $is_source = $self->process_text_node($path, $attrs, \$str, $callbackref, $lang, $cdata, 1);
+
+            if ($is_source) {
+                $self->put_untranslated_node($path, $subtree);
+            }
 
             if ($lang) {
                 $inner_xml .= $str;
+            }
+        }
+    }
+
+    if (!$self->is_meta($name)) {
+        my $missed = $self->get_untranslated_nodes($path);
+        foreach my $tagname (keys %$missed) {
+            my $tagpath = $path . '/' . $tagname;
+            my $tagtree = $missed->{$tagname};
+            $tagtree->[0]->{$self->{localize_attr}} = $self->{localize_lang};
+            my $tagxml = $self->render_tag_recursively($tagname, $tagtree, $callbackref, $lang, $tagpath);
+            if ($lang) {
+                chomp $inner_xml;
+                $inner_xml .= $space.$tagxml."\n";
             }
         }
     }
@@ -515,7 +680,9 @@ sub render_tag_recursively {
 
         my $tagpath = $path.'@'.$str;
 
-        $self->process_text_node($tagpath, $attrs, \$str, $callbackref, $lang, undef, undef);
+        if ($key ne $self->{localize_attr}) {
+            $self->process_text_node($tagpath, $attrs, \$str, $callbackref, $lang, undef, undef);
+        }
 
         if ($lang) {
             $attrs_text .= " $key=\"$str\"";

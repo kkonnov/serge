@@ -50,7 +50,7 @@ sub new {
             die "when there's more than one destination language, 'ts_file_path' should have %LANG%, %LOCALE%, %CULTURE%, %LANGNAME%, or %LANGID% macro defined";
         }
 
-        if ($self->{output_lang_files} && ($self->{output_file_path} !~ m/%(LANG|LOCALE|CULTURE|LANGNAME|LANGID)(:\w+)*%/)) {
+        if (!$self->{output_single_file} && $self->{output_lang_files} && ($self->{output_file_path} !~ m/%(LANG|LOCALE|CULTURE|LANGNAME|LANGID)(:\w+)*%/)) {
             die "when there's more than one destination language, 'output_file_path' should have %LANG%, %LOCALE%, %CULTURE%, %LANGNAME%, or %LANGID% macro defined";
         }
     }

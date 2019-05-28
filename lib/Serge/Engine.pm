@@ -35,6 +35,7 @@ sub new {
         # job defaults (can be overridden in a job config)
         active => 1,
         output_lang_files => 1,
+        output_single_file => undef,
         output_encoding => 'UTF-8',
         output_bom => 1,
         reuse_translations => 1,
@@ -224,6 +225,7 @@ sub adjust_job_defaults {
     } qw(
         active
         output_lang_files
+        output_single_file
         output_encoding
         output_bom
         reuse_translations

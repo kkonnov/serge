@@ -92,6 +92,7 @@ jobs                                ARRAY
         source_ts_file_path         STRING
         ts_default_lang_file        BOOLEAN
         output_lang_files           BOOLEAN
+        output_single_file          BOOLEAN
         output_default_lang_file    BOOLEAN
         output_encoding             STRING
         output_bom                  BOOLEAN

@@ -207,7 +207,11 @@ sub render_full_output_path {
     my $r = $self->{output_lang_rewrite};
     $lang = $r->{$lang} if exists($r->{$lang});
 
-    return subst_macros($path, $file, $lang, $self->{source_language});
+    my $fullpath = subst_macros($path, $file, $lang, $self->{source_language});
+    my ($f) = $self->run_callbacks('rewrite_lang_macros', $fullpath, $lang);
+    $fullpath = $f if $f;
+
+    return $fullpath;
 }
 
 sub gather_similar_languages_for_lang {

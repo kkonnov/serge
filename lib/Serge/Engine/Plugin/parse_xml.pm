@@ -657,7 +657,9 @@ sub render_tag_recursively {
         }
     }
 
-    if (!$self->is_meta($name)) {
+    if (!$self->is_meta($name)
+        && !$self->{parent}->{engine}->{job}->{leave_untranslated_blank}
+        && (!exists $self->{import_mode} || $self->{import_mode} != 1)) {
         my $missed = $self->get_untranslated_nodes($path);
         foreach my $tagname (keys %$missed) {
             my $tagpath = $path . '/' . $tagname;
@@ -671,7 +673,7 @@ sub render_tag_recursively {
         }
     }
 
-    # Generating the string consisting of [ attr="value"] pairs
+    # Generating the string consisting of [ attr="value" ] pairs
 
     my $attrs_text;
 

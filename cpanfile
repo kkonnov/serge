@@ -24,3 +24,4 @@ requires 'YAML::XS';
 requires 'Authen::SASL';
 requires 'Net::SMTP';
 requires 'Test::More', '0.94';
+requires 'DataDog::DogStatsd';

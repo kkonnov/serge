@@ -870,6 +870,8 @@ sub parse_source_file_callback {
         $self->{db}->update_item_props($item_id, {hint => $hint});
     }
 
+    $self->run_callbacks('after_extract_source_file_item', $self->{current_file_rel}, $lang, $string, $hint);
+
     # return registered item id (this is used in Serge::Engine method descendant, Serge::Importer)
     return $item_id;
 }
@@ -1032,6 +1034,7 @@ sub update_database_from_ts_files_lang_file {
             if ($unit->{target} ne '' or $unit->{comment} ne '' or $translation_id) {
                 print "\t\t> $unit->{key} => [$item_id/$lang]=[$translation_id]\n";
                 $self->{db}->set_translation($item_id, $lang, $unit->{target}, $unit->{fuzzy}, $unit->{comment}, 0);
+                $self->run_callbacks('after_update_ts_file_item', $relfile, $lang, $unit->{source}, $unit->{target});
             }
         } # foreach
 

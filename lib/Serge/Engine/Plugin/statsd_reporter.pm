@@ -23,6 +23,7 @@ sub init {
         port      => 'STRING',
         namespace => 'STRING',
         tags      => 'ARRAY',
+        by_words  => 'BOOLEAN',
     });
 
     $self->add({
@@ -93,21 +94,30 @@ sub after_job() {
 
 }
 
+sub count_items {
+    my ($self, $str) = @_;
+    if ($self->{data}->{by_words}) {
+        my $num_words = 0;
+        ++$num_words while $str =~ /\S+/g;
+        return $num_words;
+    }
+    return 1;
+}
+
 sub after_extract_source_file_item {
     my ($self, $phase, $file, $lang, $source, $hint) = @_;
 
     if (!exists $self->{sources}->{$file}) {
-        $self->{sources}->{$file} = 1;
-    } else {
-        $self->{sources}->{$file}++;
+        $self->{sources}->{$file} = 0;
     }
+    $self->{sources}->{$file} += $self->count_items($source);
 }
 
 sub after_update_ts_file_item {
     my ($self, $phase, $file, $lang, $source, $target) = @_;
 
     my $tags = $self->render_tags($file, $lang);
-    $self->{statsd}->increment( 'translated.items.total', { tags => $tags } );
+    $self->{statsd}->count( 'translated.items.total', $self->count_items($target), { tags => $tags } );
 }
 
 1;

@@ -12,7 +12,6 @@ RUN build-perl-deps
 FROM frolvlad/alpine-java:jre8-slim as java
 
 FROM melopt/alpine-perl-runtime
-COPY --from=build /app /app
 COPY --from=java /usr/lib/jvm /usr/lib/jvm
 COPY --from=java /usr/glibc-compat /usr/glibc-compat
 COPY --from=java /etc/nsswitch.conf /etc/nsswitch.conf
@@ -32,4 +31,5 @@ RUN cd "/tmp" && \
     echo -e "#!/bin/sh\n\njava -jar ${CRWDIN_HOME}/crowdin-cli.jar \"\$@\"" > "/usr/bin/crowdin" && \
     chmod +x "/usr/bin/crowdin"
 RUN apk --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community add php7
+COPY --from=build /app /app
 ENTRYPOINT ["/app/bin/serge"]

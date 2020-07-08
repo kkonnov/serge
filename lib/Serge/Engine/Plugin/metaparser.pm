@@ -157,6 +157,19 @@ sub process_line {
     $self->find_keyvalue;
 }
 
+sub append_macros {
+    my ($self, $group) = @_;
+
+    if (!exists $self->{macros}) {
+        %{$self->{macros}} = ();
+    }
+    foreach my $key (keys %{$group}) {
+        my $m = uc $key;
+        $self->{macros}->{$m} = $group->{$key};
+        print "added macros: '$m' with value '$self->{macros}->{$m}'\n" if $self->{debug};
+    }
+}
+
 sub find_context {
     my ($self) = @_;
 
@@ -242,6 +255,7 @@ sub find_key {
         die "'key' pattern returned empty value" unless $key ne '';
         $self->{key} = $self->_with_section($key);
         print "key: '$key'\n" if $self->{debug};
+        $self->append_macros(\%+);
         return 1; # skip processing
     }
 
@@ -256,6 +270,7 @@ sub find_value {
         die "'value' pattern returned empty value" unless $value ne '';
         $self->{value} = $value;
         print "value: '$value'\n" if $self->{debug};
+        $self->append_macros(\%+);
         return 1; # skip processing
     }
 
@@ -273,6 +288,7 @@ sub find_keyvalue {
         $self->{key} = $self->_with_section($key);
         $self->{value} = $value;
         print "keyvalue: '$self->{key}'=>'$self->{value}'\n" if $self->{debug};
+        $self->append_macros(\%+);
         return 1; # skip processing
     }
 
@@ -330,12 +346,24 @@ sub _flush {
     }
 }
 
+sub subst_macros {
+    my ($self, $str) = @_;
+    if (defined $self->{macros}) {
+        foreach my $key (keys %{$self->{macros}}) {
+            $str =~ s/%$key%/$self->{macros}->{$key}/ge;
+        }
+    }
+    return $str;
+}
+
 sub unescape {
     my ($self, $source) = @_;
 
-    my $rules = $self->{data}->{unescape};
     foreach my $rule (@{$self->{data}->{unescape}}) {
         my ($from, $to, $modifiers) = @$rule;
+
+        $from = $self->subst_macros($from);
+        $to = $self->subst_macros($to);
 
         my $eval_line = "\$source =~ s/$from/$to/$modifiers;";
         eval($eval_line);
@@ -350,6 +378,10 @@ sub escape {
 
     foreach my $rule (@{$self->{data}->{escape}}) {
         my ($from, $to, $modifiers) = @$rule;
+
+        $from = $self->subst_macros($from);
+        $to = $self->subst_macros($to);
+
         my $eval_line = "\$translation =~ s/$from/$to/$modifiers;";
         eval($eval_line);
         die "eval() failed on: '$eval_line'\n$@" if $@;

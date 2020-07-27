@@ -31,7 +31,7 @@ RUN cd "/tmp" && \
     echo -e "#!/bin/sh\n\njava -jar ${CRWDIN_HOME}/crowdin-cli.jar \"\$@\"" > "/usr/bin/crowdin" && \
     chmod +x "/usr/bin/crowdin"
 RUN apk --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/community add php7
-RUN apk add nodejs npm
+RUN apk --no-cache add nodejs npm
 RUN npm install -g typescript@^3.8
 COPY --from=build /app /app
 ENTRYPOINT ["/app/bin/serge"]
